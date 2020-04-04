@@ -1,11 +1,11 @@
 import os
-import scipy.io
-import scipy.misc
 import numpy as np
-import pandas as pd
-import PIL
-import struct
-import cv2
+from PIL import Image
+# import scipy.io
+# import scipy.misc
+# import pandas as pd
+# import struct
+# import cv2
 from numpy import expand_dims
 import tensorflow as tf
 from skimage.transform import resize
@@ -15,11 +15,20 @@ from keras.models import load_model, Model
 from keras.layers.merge import add, concatenate
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import img_to_array
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import imshow
-from matplotlib.patches import Rectangle
-import time
+from time import time
 
+#Take Website Screenshot
+import imgkit
+options = {
+  "xvfb": ""
+}
+screenshot = url+'.jpg'
+imgkit.from_url(url, screenshot,options=options)
+
+#Start Here
+valid_ext = ['rgb','gif','pbm','pgm','ppm','tiff','rast','xbm','jpeg', 'jpg','bmp','png','webp','exr']
+
+#Load model into memory
 yolov3 = load_model('my.h5')
 net_h, net_w = 416, 416
 obj_thresh, nms_thresh = 0.5, 0.45
@@ -31,29 +40,15 @@ with open('logo.name','r+') as f:
         i = i.rstrip()
         labels.append(i)
 
-print(labels)
-
-
 def load_image_pixels(filename, shape):
-    # load the image to get its shape
     image = load_img(filename)
     width, height = image.size
-    # load the image with the required size
     image = load_img(filename, target_size=shape)
-    # convert to numpy array
     image = img_to_array(image)
-    # scale pixel values to [0, 1]
     image = image.astype('float32')
     image /= 255.0
-    # add a dimension so that we have one sample
     image = expand_dims(image, 0)
     return image, width, height
-
-input_w, input_h = 416, 416
-# define our new photo
-photo_filename = '180.jpg'
-# load and prepare image
-image, image_w, image_h = load_image_pixels(photo_filename, (input_w, input_h))
 
 class BoundBox:
     def __init__(self, xmin, ymin, xmax, ymax, objness = None, classes = None):
@@ -148,25 +143,20 @@ def decode_netout(netout, anchors, obj_thresh,  net_h, net_w):
         col = i % grid_w
         
         for b in range(nb_box):
-            # 4th element is objectness score
             objectness = netout[int(row)][int(col)][b][4]
-            #objectness = netout[..., :4]
             
             if(objectness.all() <= obj_thresh): continue
             
-            # first 4 elements are x, y, w, and h
             x, y, w, h = netout[int(row)][int(col)][b][:4]
 
-            x = (col + x) / grid_w # center position, unit: image width
-            y = (row + y) / grid_h # center position, unit: image height
-            w = anchors[2 * b + 0] * np.exp(w) / net_w # unit: image width
-            h = anchors[2 * b + 1] * np.exp(h) / net_h # unit: image height  
+            x = (col + x) / grid_w 
+            y = (row + y) / grid_h 
+            w = anchors[2 * b + 0] * np.exp(w) / net_w 
+            h = anchors[2 * b + 1] * np.exp(h) / net_h  
             
-            # last elements are class probabilities
             classes = netout[int(row)][col][b][5:]
             
             box = BoundBox(x-w/2, y-h/2, x+w/2, y+h/2, objectness, classes)
-            #box = BoundBox(x-w/2, y-h/2, x+w/2, y+h/2, None, classes)
 
             boxes.append(box)
 
@@ -201,21 +191,31 @@ def get_boxes(boxes, labels, thresh):
                 v_scores.append(box.classes[i]*100)
     return v_boxes, v_labels, v_scores
 
-t1 = time.time()
-yolos = yolov3.predict(image)
-print(yolos)
-print(time.time()-t1)
-class_threshold = 0.6
-boxes = list()
+while True:
+    try:
+        photo_filename = screenshot
+        img = Image.open(photo_filename)
+        if img.format.lower() in valid_ext:
+            t1 = time()
+            input_w, input_h = 416, 416
+            image, image_w, image_h = load_image_pixels(photo_filename, (input_w, input_h))
+            yolos = yolov3.predict(image)
+            # print(yolos)
+            print(time()-t1)
+            class_threshold = 0.6
+            boxes = list()
 
-for i in range(len(yolos)):
-    boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh,  net_h, net_w)
+            for i in range(len(yolos)):
+                boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh,  net_h, net_w)
 
+            # do_nms(boxes, nms_thresh)
 
-# do_nms(boxes, nms_thresh)
-
-v_boxes, v_labels, v_scores = get_boxes(boxes, labels, class_threshold)
-for i in range(len(v_boxes)):
-    print(v_labels[i], v_scores[i])
-
-# draw_boxes(photo_filename, v_boxes, v_labels, v_scores)
+            v_boxes, v_labels, v_scores = get_boxes(boxes, labels, class_threshold)
+            for i in range(len(v_boxes)):
+                print(v_labels[i], v_scores[i])
+    except KeyboardInterrupt:
+        raise
+    except:
+        print('Inalid extenions or corrup image')
+    
+    
