@@ -18,24 +18,67 @@ from keras.preprocessing.image import img_to_array
 from time import time
 
 #Take Website Screenshot
-import imgkit
-options = {
-  "xvfb": ""
-}
-screenshot = url+'.jpg'
-imgkit.from_url(url, screenshot,options=options)
+# import imgkit
+# options = {
+#   "xvfb": ""
+# }
+# screenshot = url+'.jpg'
+# imgkit.from_url(url, screenshot,options=options)
 
 #Start Here
+nametoL = {'ABBANK': 'abbank.vn',
+           'ACB': 'acb.com.vn',
+           'AGRIBANK': 'agribank.com.vn',
+           'BACA-BANK': 'baca-bank.vn',
+           'BAOVIETBANK': 'baovietbank.vn',
+           'BIDC': 'bidc.vn', 'BIDV': 'bidv.com.vn',
+           'CITIBANK': 'citibank.com.vn', 'DB': 'db.com',
+           'DONGABANK': 'dongabank.com.vn',
+           'EXIMBANK': 'eximbank.com.vn',
+           'GPBANK': 'gpbank.com.vn',
+           'HDBANK': 'hdbank.com.vn',
+           'HLB': 'hlb.com.my',
+           'INDOVINABANK': 'indovinabank.com.vn',
+           'KIENLONGBANK': 'kienlongbank.com',
+           'LIENVIETPOSTBANK': 'lienvietpostbank.com.vn',
+           'MBBANK': 'mbbank.com.vn',
+           'MSB': 'msb.com.vn',
+           'NAMABANK': 'namabank.com.vn',
+           'NCB-BANK': 'ncb-bank.vn',
+           'OCB': 'ocb.com.vn',
+           'OCEANBANK': 'oceanbank.vn',
+           'PGBANK': 'pgbank.com.vn',
+           'PUBLICBANK': 'publicbank.com.vn',
+           'PVCOMBANK': 'pvcombank.com.vn',
+           'SACOMBANK': 'sacombank.com.vn',
+           'SAIGONBANK': 'saigonbank.com.vn',
+           'SCB': 'scb.com.vn',
+           'SEABANK': 'seabank.com.vn',
+           'SHB': 'shb.com.vn',
+           'SHINHAN': 'shinhan.com.vn',
+           'STANDARDCHARTERED': 'standardchartered.com',
+           'TECHCOMBANK': 'techcombank.com.vn',
+            'TPB': 'tpb.vn',
+            'VBSP': 'vbsp.org.vn',
+            'VIB': 'vib.com.vn',
+            'VIETABANK': 'vietabank.com.vn',
+           'VIETBANK': 'vietbank.com.vn',
+            'VIETCAPITALBANK': 'vietcapitalbank.com.vn',
+            'VIETCOMBANK': 'vietcombank.com.vn',
+            'VIETINBANK': 'vietinbank.vn',
+            'VPBANK': 'vpbank.com.vn',
+            'VRBANK': 'vrbank.com.vn'}
+
 valid_ext = ['rgb','gif','pbm','pgm','ppm','tiff','rast','xbm','jpeg', 'jpg','bmp','png','webp','exr']
 
 #Load model into memory
-yolov3 = load_model('my.h5')
+yolov3 = load_model('yolov3.h5',compile=False)
 net_h, net_w = 416, 416
 obj_thresh, nms_thresh = 0.5, 0.45
 anchors = [[116,90,  156,198,  373,326],  [30,61, 62,45,  59,119], [10,13,  16,30,  33,23]]
 
 labels = []
-with open('logo.name','r+') as f:
+with open('logo.names','r+') as f:
     for i in f:
         i = i.rstrip()
         labels.append(i)
@@ -191,9 +234,17 @@ def get_boxes(boxes, labels, thresh):
                 v_scores.append(box.classes[i]*100)
     return v_boxes, v_labels, v_scores
 
+# Check password form here
+def check_form():
+    if has_form == 1:
+        return 1 
+    elif has_form == 0:
+        return 0
+
 while True:
     try:
         photo_filename = screenshot
+        # photo_filename = input('[>]')
         img = Image.open(photo_filename)
         if img.format.lower() in valid_ext:
             t1 = time()
@@ -213,9 +264,11 @@ while True:
             v_boxes, v_labels, v_scores = get_boxes(boxes, labels, class_threshold)
             for i in range(len(v_boxes)):
                 print(v_labels[i], v_scores[i])
+            for k, v in nametoL.items():
+                if k == v_labels[0] and check_form() == 1:
+                    print('THAG L* nay gia mao website '+v)
     except KeyboardInterrupt:
         raise
     except:
         print('Inalid extenions or corrup image')
-    
-    
+ 
