@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 from PIL import Image
 # import scipy.io
@@ -236,15 +237,12 @@ def get_boxes(boxes, labels, thresh):
 
 # Check password form here
 def check_form():
-    if has_form == 1:
-        return 1 
-    elif has_form == 0:
-        return 0
+    return 1 
 
 while True:
     try:
-        photo_filename = screenshot
-        # photo_filename = input('[>]')
+        # photo_filename = screenshot
+        photo_filename = input('[>]')
         img = Image.open(photo_filename)
         if img.format.lower() in valid_ext:
             t1 = time()
@@ -264,11 +262,13 @@ while True:
             v_boxes, v_labels, v_scores = get_boxes(boxes, labels, class_threshold)
             for i in range(len(v_boxes)):
                 print(v_labels[i], v_scores[i])
-            for k, v in nametoL.items():
-                if k == v_labels[0] and check_form() == 1:
-                    print('THAG L* nay gia mao website '+v)
+            print(v_labels)
+            if len(v_labels) != 0 and check_form() == 1:
+                print('THAG L* nay gia mao website '+nametoL[v_labels[0]])
     except KeyboardInterrupt:
-        raise
+        sys.exit(0)
     except:
-        print('Inalid extenions or corrup image')
+        print("Du Lieu khong co ngan hang nay hoac file khong hop le")
+        
+    
  
