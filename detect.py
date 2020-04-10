@@ -2,6 +2,8 @@ import os
 import sys
 import numpy as np
 from PIL import Image
+import requests
+from bs4 import BeautifulSoup
 # import scipy.io
 # import scipy.misc
 # import pandas as pd
@@ -68,22 +70,24 @@ nametoL = {'ABBANK': 'abbank.vn',
             'VIETCOMBANK': 'vietcombank.com.vn',
             'VIETINBANK': 'vietinbank.vn',
             'VPBANK': 'vpbank.com.vn',
-            'VRBANK': 'vrbank.com.vn'}
+            'VRBANK': 'vrbank.com.vn',
+            'CBBANK' : '123'}
 
 valid_ext = ['rgb','gif','pbm','pgm','ppm','tiff','rast','xbm','jpeg', 'jpg','bmp','png','webp','exr']
 
 #Load model into memory
-yolov3 = load_model('yolov3.h5',compile=False)
+yolov3 = load_model('final.h5')
+print(yolov3.summary())
 net_h, net_w = 416, 416
 obj_thresh, nms_thresh = 0.5, 0.45
 anchors = [[116,90,  156,198,  373,326],  [30,61, 62,45,  59,119], [10,13,  16,30,  33,23]]
 
 labels = []
-with open('logo.names','r+') as f:
+with open('logos.name','r+') as f:
     for i in f:
         i = i.rstrip()
         labels.append(i)
-
+print(labels)
 def load_image_pixels(filename, shape):
     image = load_img(filename)
     width, height = image.size
@@ -223,8 +227,6 @@ def correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w):
         boxes[i].ymin = int((boxes[i].ymin - y_offset) / y_scale * image_h)
         boxes[i].ymax = int((boxes[i].ymax - y_offset) / y_scale * image_h)
 
-
-
 def get_boxes(boxes, labels, thresh):
     v_boxes, v_labels, v_scores = list(), list(), list()
     for box in boxes:
@@ -236,39 +238,69 @@ def get_boxes(boxes, labels, thresh):
     return v_boxes, v_labels, v_scores
 
 # Check password form here
-def check_form():
-    return 1 
+def check_form(link):
+    result = requests.get(link)
+    soup = BeautifulSoup(result.content, "html.parser")
+    soup = BeautifulSoup(result.content, "html.parser")
+    inputs = soup.find_all('input',{'type' : 'password'})
+    if inputs != None:
+        return 1
+    else:
+        return 0
 
-while True:
-    try:
-        # photo_filename = screenshot
-        photo_filename = input('[>]')
-        img = Image.open(photo_filename)
-        if img.format.lower() in valid_ext:
-            t1 = time()
-            input_w, input_h = 416, 416
-            image, image_w, image_h = load_image_pixels(photo_filename, (input_w, input_h))
-            yolos = yolov3.predict(image)
-            # print(yolos)
-            print(time()-t1)
-            class_threshold = 0.6
-            boxes = list()
+# while True:
+#     try:
+#         # photo_filename = 'vc.jpg'
+#         photo_filename = input('[>]')
+#         img = Image.open(photo_filename)
+#         if img.format.lower() in valid_ext:
+#             t1 = time()
+#             input_w, input_h = 416, 416
+#             image, image_w, image_h = load_image_pixels(photo_filename, (input_w, input_h))
+#             yolos = yolov3.predict(image)
+#             print(yolos)
+#             print('time:'+str(time()-t1))
+#             class_threshold = 0.6
+#             boxes = list()
 
-            for i in range(len(yolos)):
-                boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh,  net_h, net_w)
+#             for i in range(len(yolos)):
+#                 boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh,  net_h, net_w)
 
-            # do_nms(boxes, nms_thresh)
+#             # do_nms(boxes, nms_thresh)
 
-            v_boxes, v_labels, v_scores = get_boxes(boxes, labels, class_threshold)
-            for i in range(len(v_boxes)):
-                print(v_labels[i], v_scores[i])
-            print(v_labels)
-            if len(v_labels) != 0 and check_form() == 1:
-                print('THAG L* nay gia mao website '+nametoL[v_labels[0]])
-    except KeyboardInterrupt:
-        sys.exit(0)
-    except:
-        print("Du Lieu khong co ngan hang nay hoac file khong hop le")
-        
+#             v_boxes, v_labels, v_scores = get_boxes(boxes, labels, class_threshold)
+#             for i in range(len(v_boxes)):
+#                 print(v_labels[i], v_scores[i])
+#             print(v_labels)
+#             if len(v_labels) != 0 and check_form() == 1:
+#                 print('THAG L* nay gia mao website '+nametoL[v_labels[0]])
+            # if len(v_labels) > 1:
+            #   print('phat hien nhieu hon 1 ngan hang')
+#     except KeyboardInterrupt:
+#         sys.exit(0)
+#     except:
+#         print("Du Lieu khong co ngan hang nay hoac file khong hop le")
+
+photo_filename = 'tp.png'
+img = Image.open(photo_filename)
+if img.format.lower() in valid_ext:
+    t1 = time()
+    input_w, input_h = 416, 416
+    image, image_w, image_h = load_image_pixels(photo_filename, (input_w, input_h))
+    yolos = yolov3.predict(image)
+    print(yolos)
+    print('time:'+str(time()-t1))
+    class_threshold = 0.6
+    boxes = list()
+
+    for i in range(len(yolos)):
+        boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh,  net_h, net_w)
+
+    # do_nms(boxes, nms_thresh)
+
+    v_boxes, v_labels, v_scores = get_boxes(boxes, labels, class_threshold)
+    for i in range(len(v_boxes)):
+        print(v_labels[i], v_scores[i])
+    if len(v_labels) != 0:
+        print('THAG L* nay gia mao website '+nametoL[v_labels[0]])    
     
- 
